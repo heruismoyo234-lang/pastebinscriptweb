@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastebin Script</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background-color: #050914;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .screen {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ==============================
+           BAGIAN 1 — GERBANG (GATE)
+           ============================== */
+        .gate-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 25px;
+            position: relative;
+            padding-top: 40px;
+        }
+
+        .glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 168, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .gate-watermark {
+            height: 45px;
+            width: auto;
+            margin-bottom: 10px;
+        }
+
+        .gate-title {
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 168, 255, 0.5);
+        }
+
+        .gate-subtitle {
+            color: #a0aab5;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .btn-follow {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            color: #000000;
+            box-shadow: 0 4px 15px rgba(0, 168, 255, 0.4);
+        }
+
+        .btn-follow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 168, 255, 0.6);
+        }
+
+        .btn-follow.done {
+            background: #1e4a3a;
+            color: #ffffff;
+            box-shadow: none;
+            cursor: default;
+            transform: none;
+        }
+
+        .btn-continue {
+            background-color: #1a1e26;
+            color: #7a7f85;
+            border: 1px solid #2a2e36;
+            cursor: not-allowed;
+        }
+
+        .btn-continue.active {
+            background-color: #0c141c;
+            color: #ffffff;
+            border: 1px solid #4facfe;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-continue.active:hover {
+            background-color: #4facfe;
+            color: #000000;
+            transform: translateY(-2px);
+        }
+
+        .footer-note {
+            color: #555c66;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
+        /* ==============================
+           BAGIAN 2 — KANVAS UTAMA
+           ============================== */
+        .main-app {
+            display: none; /* Sembunyikan dulu, munculkan setelah follow */
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5px;
+            position: relative;
+            height: 40px;
+        }
+
+        .watermark {
+            height: 35px;
+            width: auto;
+        }
+
+        .header-title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .close-btn {
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .main-image-container {
+            line-height: 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .main-image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            background-color: #0c141c;
+            padding: 12px 15px;
+            border-radius: 12px;
+            gap: 15px;
+        }
+
+        .profile-pic {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #4a90e2;
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .profile-name {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .profile-handle {
+            color: #7a7f85;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .text-box {
+            background-image: url('https://files.catbox.moe/uvvl8m.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 220px;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editable-text {
+            color: #d3d3d3;
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            outline: none;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            word-wrap: break-word;
+            border: none;
+            background: transparent;
+        }
+
+        .copy-btn {
+            background-image: url('https://files.catbox.moe/uvvl8m.jpg');
+            background-size: cover;
+            background-position: bottom;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.97);
+        }
+
+        .bottom-links {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .link-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .pill {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .pill.green {
+            background-color: #163a2c;
+            border: 1px solid #1e4a3a;
+        }
+
+        .pill.dark {
+            background-color: #1a1e26;
+            border: 1px solid #2a2e36;
+        }
+
+        .link-desc {
+            color: #d3d3d3;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==============================
+         LAYAR 1 — GERBANG
+         ============================== -->
+    <div class="screen" id="gateScreen">
+        <div class="gate-container">
+            <div class="glow"></div>
+            
+            <img class="gate-watermark" src="https://files.catbox.moe/a63nha.png" alt="Hanz Script">
+            
+            <h1 class="gate-title">HANZ SCRIPT</h1>
+            
+            <p class="gate-subtitle">
+                Silakan ikuti akun TikTok kami terlebih dahulu untuk membuka akses ke halaman script utama.
+            </p>
+
+            <button class="btn btn-follow" id="followBtn" onclick="followTikTok()">
+                FOLLOW TIKTOK @hannz_aj
+            </button>
+
+            <button class="btn btn-continue" id="continueBtn" onclick="lanjutkan()" disabled>
+                LANJUTKAN SCRIPT ➔
+            </button>
+
+            <p class="footer-note">
+                *Tekan tombol Follow, lalu kembali ke sini untuk melanjutkan.
+            </p>
+        </div>
+    </div>
+
+    <!-- ==============================
+         LAYAR 2 — KANVAS UTAMA
+         ============================== -->
+    <div class="screen main-app" id="mainScreen">
+        
+        <div class="header">
+            <img class="watermark" src="https://files.catbox.moe/a63nha.png" alt="Hanz Script">
+            <span class="header-title">PASTEBIN SCRIPT</span>
+            <span class="close-btn" onclick="kembaliKeGerbang()">&times;</span>
+        </div>
+
+        <div class="main-image-container">
+            <img src="https://files.catbox.moe/a1zv5q.jpg" alt="Main Image">
+        </div>
+
+        <div class="profile-container">
+            <img class="profile-pic" src="https://files.catbox.moe/xe8t2k.png" alt="Profil Anime">
+            <div class="profile-info">
+                <span class="profile-name">hanzLowney</span>
+                <span class="profile-handle">@hannz_aj</span>
+            </div>
+        </div>
+
+        <div class="text-box">
+            <div class="editable-text" contenteditable="true" id="teksArea">teks...</div>
+        </div>
+
+        <div class="copy-btn" onclick="salinTeks()">
+            COPY TEKS TO CLIPBOARD
+        </div>
+
+        <div class="bottom-links">
+            <a href="https://whatsapp.com/channel/0029VbDkq1x8PgsDB78caM11" class="link-item" target="_blank">
+                <span class="pill green">saluran</span>
+                <span class="link-desc">saluran script</span>
+            </a>
+            <a href="https://tiktok.com/@hannz_aj" class="link-item" target="_blank">
+                <span class="pill dark">tiktok</span>
+                <span class="link-desc">follow my tiktok</span>
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Fungsi Gerbang ---
+        function followTikTok() {
+            window.open('https://tiktok.com/@hannz_aj', '_blank');
+
+            const followBtn = document.getElementById('followBtn');
+            followBtn.innerText = '✓ SUDAH DI FOLLOW';
+            followBtn.classList.add('done');
+            followBtn.disabled = true;
+
+            const continueBtn = document.getElementById('continueBtn');
+            continueBtn.disabled = false;
+            continueBtn.classList.add('active');
+        }
+
+        function lanjutkan() {
+            // Sembunyikan gerbang, munculkan kanvas utama
+            document.getElementById('gateScreen').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'flex';
+        }
+
+        function kembaliKeGerbang() {
+            // Sembunyikan kanvas utama, munculkan gerbang
+            document.getElementById('mainScreen').style.display = 'none';
+            document.getElementById('gateScreen').style.display = 'flex';
+            
+            // Reset tombol gerbang
+            const followBtn = document.getElementById('followBtn');
+            followBtn.innerText = 'FOLLOW TIKTOK @hannz_aj';
+            followBtn.classList.remove('done');
+            followBtn.disabled = false;
+
+            const continueBtn = document.getElementById('continueBtn');
+            continueBtn.disabled = true;
+            continueBtn.classList.remove('active');
+        }
+
+        // --- Fungsi Salin Teks ---
+        function salinTeks() {
+            const teks = document.getElementById('teksArea').innerText;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(teks).then(() => {
+                    alert('Teks berhasil disalin ke clipboard!');
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(teks);
+                });
+            } else {
+                fallbackCopyTextToClipboard(teks);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert('Teks berhasil disalin ke clipboard!');
+                } else {
+                    alert('Gagal menyalin teks. Silakan salin manual.');
+                }
+            } catch (err) {
+                alert('Gagal menyalin teks. Silakan salin manual.');
+            }
+
+            document.body.removeChild(textArea);
+        }
+    </script>
+
+</body>
+</html>
